@@ -9,12 +9,17 @@ from pydub import AudioSegment  # ✅ NOVO
 
 app = FastAPI(title="Voice Burnout Analysis API")
 
+# Lista explícita de origens permitidas
+origins = [
+    "https://burnout-frontend.onrender.com",  # A URL exata do seu frontend em produção
+    "http://localhost:3000",                  # Para desenvolvimento local
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=".*",  # <- aceita qualquer origem (inclusive subdomínios do Render)
-# <- allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://burnout-doi7.onrender.com", "https://burnout-frontend.onrender.com"],
+    allow_origins=origins,  # <- Usamos a lista aqui
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"], # Boas práticas: seja explícito
     allow_headers=["*"],
 )
 
