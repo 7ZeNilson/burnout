@@ -11,7 +11,8 @@ app = FastAPI(title="Voice Burnout Analysis API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://burnout-doi7.onrender.com", "https://burnout-frontend.onrender.com"],
+    allow_origin_regex=".*",  # <- aceita qualquer origem (inclusive subdomínios do Render)
+# <- allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://burnout-doi7.onrender.com", "https://burnout-frontend.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
