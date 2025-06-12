@@ -2,5 +2,5 @@ fastapi
 uvicorn[standard]
 librosa
 numpy
-pydantic
+pydub
 python-multipart
