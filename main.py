@@ -5,21 +5,21 @@ import numpy as np
 import tempfile
 import os
 from pydantic import BaseModel
-from pydub import AudioSegment  # ✅ NOVO
+from pydub import AudioSegment
+import logging
+
+# Configurar logging para debug
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Voice Burnout Analysis API")
 
-# Lista explícita de origens permitidas
-origins = [
-    "https://burnout-frontend.onrender.com",  # A URL exata do seu frontend em produção
-    "http://localhost:3000",                  # Para desenvolvimento local
-]
-
+# Configuração CORS SUPER permissiva para debug
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # <- Usamos a lista aqui
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"], # Boas práticas: seja explícito
+    allow_origins=["*"],  # MUITO permissivo - para debug
+    allow_credentials=False,  # Mudamos para False quando origins=["*"]
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -105,14 +105,23 @@ def analyze_burnout_risk(features: dict) -> tuple[str, float]:
 
 @app.get("/")
 async def root():
-    return {"message": "Voice Burnout Analysis API is running"}
+    logger.info("Root endpoint called")
+    return {"message": "Voice Burnout Analysis API is running", "cors": "enabled"}
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
+    logger.info("Health check called")
+    return {"status": "healthy", "version": "1.0.0", "cors": "enabled"}
+
+# Endpoint para testar CORS especificamente
+@app.get("/test-cors")
+async def test_cors():
+    return {"message": "CORS is working!", "timestamp": "2024-01-01"}
 
 @app.post("/api/analyze", response_model=AnalysisResponse)
 async def analyze_voice(file: UploadFile = File(...)):
+    logger.info(f"Analyze endpoint called with file: {file.filename}")
+    
     if not file.filename:
         raise HTTPException(status_code=400, detail="Nenhum arquivo foi enviado")
 
@@ -133,7 +142,6 @@ async def analyze_voice(file: UploadFile = File(...)):
             temp_file.write(content)
             temp_file_path = temp_file.name
 
-        # ✅ Converte para WAV (PCM 16-bit) para garantir compatibilidade com librosa
         converted_path = temp_file_path + "_converted.wav"
         audio = AudioSegment.from_file(temp_file_path)
         audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
@@ -142,6 +150,7 @@ async def analyze_voice(file: UploadFile = File(...)):
         try:
             features = extract_voice_features(converted_path)
             risk_level, score = analyze_burnout_risk(features)
+            logger.info(f"Analysis completed: {risk_level}, {score}")
             return AnalysisResponse(
                 burnout_risk=risk_level,
                 score=score
@@ -152,6 +161,7 @@ async def analyze_voice(file: UploadFile = File(...)):
                     os.unlink(path)
 
     except Exception as e:
+        logger.error(f"Error processing audio: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao processar áudio: {str(e)}")
 
 if __name__ == "__main__":
